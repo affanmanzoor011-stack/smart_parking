@@ -15,6 +15,7 @@ Run:
 import csv
 import hmac
 import io
+import math
 import os
 import re
 import tempfile
@@ -227,38 +228,51 @@ if page == "Check vehicle":
 
 # ---------------------------------------------------------- Challan history
 elif page == "Challan history":
-    rows = db.get_challans()
+    PAGE_SIZE = 20
+    n_all, fines_all = db.challan_totals()
     st.write(
-        f"Total challans: **{len(rows)}**  |  Total fines: **Rs {sum(r['fine'] for r in rows)}**"
-        f"  |  Owners in database: **{len(db.list_owners())}**"
+        f"Total challans: **{n_all}**  |  Total fines: **Rs {fines_all}**"
+        f"  |  Owners in database: **{db.count_owners()}**"
     )
 
-    if not rows:
+    if n_all == 0:
         st.info("No challans yet. Create one from the 'Check vehicle' page.")
     else:
+        q = st.text_input("Search by plate, owner name or email")
+        total = db.count_challans(q)
+        pages = max(1, math.ceil(total / PAGE_SIZE))
+        page_no = 1
+        if pages > 1:
+            page_no = st.number_input(f"Page (1 to {pages})", min_value=1, max_value=pages,
+                                      value=1, step=1, key=f"pg_{q}")
+        rows = db.search_challans(q, PAGE_SIZE, (int(page_no) - 1) * PAGE_SIZE)
+        st.caption(f"{total} matching challan(s). Showing {len(rows)} on this page, newest first.")
+
         headers = ["ID", "Plate", "Owner", "Email", "Zone", "Fine (Rs)", "Time", "Status"]
-        st.markdown(md_table(
-            headers,
-            [[r["id"], r["plate"], r["owner_name"], r["email"], r["zone"],
-              r["fine"], r["timestamp"], r["status"]] for r in rows],
-        ))
+        to_row = lambda r: [r["id"], r["plate"], r["owner_name"], r["email"], r["zone"],
+                            r["fine"], r["timestamp"], r["status"]]
 
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(headers)
-        for r in rows:
-            w.writerow([r["id"], r["plate"], r["owner_name"], r["email"], r["zone"],
-                        r["fine"], r["timestamp"], r["status"]])
-        st.download_button("Download history (CSV)", buf.getvalue().encode("utf-8"),
-                           file_name="challan_history.csv", mime="text/csv")
+        if not rows:
+            st.warning("No challans match your search.")
+        else:
+            st.markdown(md_table(headers, [to_row(r) for r in rows]))
 
-        st.subheader("View a challan")
-        options = [f"#{r['id']} - {r['plate']} - {r['timestamp']}" for r in rows]
-        r = rows[options.index(st.selectbox("Select challan", options))]
-        if os.path.exists(r["image_path"]):
-            st.image(r["image_path"], caption="Evidence image", width="stretch")
-        st.write(f"**{r['plate']}**  |  {r['zone']}  |  Rs {r['fine']}  |  {r['owner_name']}  |  {r['email']}  |  {r['status']}")
-        st.code(build_message(r), language=None)
+            # CSV of everything that matches the search (not just this page)
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(headers)
+            for r in db.search_challans(q, 100000, 0):
+                w.writerow(to_row(r))
+            st.download_button("Download matching challans (CSV)", buf.getvalue().encode("utf-8"),
+                               file_name="challan_history.csv", mime="text/csv")
+
+            st.subheader("View a challan")
+            options = [f"#{r['id']} - {r['plate']} - {r['timestamp']}" for r in rows]
+            r = rows[options.index(st.selectbox("Select challan (from this page)", options))]
+            if os.path.exists(r["image_path"]):
+                st.image(r["image_path"], caption="Evidence image", width="stretch")
+            st.write(f"**{r['plate']}**  |  {r['zone']}  |  Rs {r['fine']}  |  {r['owner_name']}  |  {r['email']}  |  {r['status']}")
+            st.code(build_message(r), language=None)
 
 # ------------------------------------------------------------------ Owners
 else:
@@ -279,9 +293,12 @@ else:
                 db.add_owner(new_plate, new_name, new_phone, new_email)
                 st.success("Owner saved.")
 
-    owners = db.list_owners()
+    st.subheader("Find an owner")
+    oq = st.text_input("Search owners (plate, name or email)")
+    total_o, owners = db.search_owners(oq, limit=50)
     if owners:
+        st.caption(f"{total_o} owner(s) match. Showing the first {len(owners)}.")
         st.markdown(md_table(["Plate", "Owner", "Email", "Phone"],
                              [[o["plate"], o["name"], o["email"] or "-", o["phone"] or "-"] for o in owners]))
     else:
-        st.info("No owners yet.")
+        st.info("No owners found.")

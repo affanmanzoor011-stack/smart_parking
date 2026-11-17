@@ -131,3 +131,53 @@ def find_recent_challan(plate, zone, minutes=60):
 def get_challans():
     with _db() as c:
         return [dict(r) for r in c.execute("SELECT * FROM challans ORDER BY id DESC")]
+
+
+# ---- search + paging helpers (so the app never loads thousands of rows) ----
+def _like(query):
+    q = (query or "").strip()
+    return f"%{normalize(q)}%", f"%{q}%"
+
+
+def count_challans(query=""):
+    plate_like, text_like = _like(query)
+    with _db() as c:
+        return c.execute(
+            "SELECT COUNT(*) FROM challans WHERE plate LIKE ? OR owner_name LIKE ? OR email LIKE ?",
+            (plate_like, text_like, text_like),
+        ).fetchone()[0]
+
+
+def search_challans(query="", limit=20, offset=0):
+    """Newest first. Matches plate, owner name or email."""
+    plate_like, text_like = _like(query)
+    with _db() as c:
+        return [dict(r) for r in c.execute(
+            "SELECT * FROM challans WHERE plate LIKE ? OR owner_name LIKE ? OR email LIKE ? "
+            "ORDER BY id DESC LIMIT ? OFFSET ?",
+            (plate_like, text_like, text_like, limit, offset),
+        )]
+
+
+def challan_totals():
+    """(number of challans, total fines in Rs)."""
+    with _db() as c:
+        n, total = c.execute("SELECT COUNT(*), COALESCE(SUM(fine), 0) FROM challans").fetchone()
+    return n, total
+
+
+def count_owners():
+    with _db() as c:
+        return c.execute("SELECT COUNT(*) FROM owners").fetchone()[0]
+
+
+def search_owners(query="", limit=50):
+    """Returns (total matches, first `limit` owners)."""
+    plate_like, text_like = _like(query)
+    where = "plate LIKE ? OR name LIKE ? OR email LIKE ?"
+    args = (plate_like, text_like, text_like)
+    with _db() as c:
+        total = c.execute(f"SELECT COUNT(*) FROM owners WHERE {where}", args).fetchone()[0]
+        rows = [dict(r) for r in c.execute(
+            f"SELECT * FROM owners WHERE {where} ORDER BY plate LIMIT ?", args + (limit,))]
+    return total, rows
