@@ -15,28 +15,7 @@ DB_PATH = "parking.db"
 IMG_DIR = "challan_images"
 
 # Clearly fake sample data. Add your own entries from the Owners tab.
-DUMMY_OWNERS = [
-    ("UP80AB1234", "Demo Owner 1", "+910000000001"),
-    ("DL1CAB0001", "Demo Owner 2", "+910000000002"),
-    ("HR26DK0001", "Demo Owner 3", "+910000000003"),
-    ("UP65AB1001", "Demo Owner 4", "+910000000004"),
-    ("UP32CD2002", "Demo Owner 5", "+910000000005"),
-    ("UP14EF3003", "Demo Owner 6", "+910000000006"),
-    ("DL3CAF4004", "Demo Owner 7", "+910000000007"),
-    ("DL7CQ5005", "Demo Owner 8", "+910000000008"),
-    ("DL10CB6006", "Demo Owner 9", "+910000000009"),
-    ("HR55ET7097", "Demo Owner 10", "+910000000010"),
-    ("HR51BK8008", "Demo Owner 11", "+910000000011"),
-    ("RJ14CD9009", "Demo Owner 12", "+910000000012"),
-    ("RJ27GH1010", "Demo Owner 13", "+910000000013"),
-    ("MH12AB2020", "Demo Owner 14", "+910000000014"),
-    ("MH02DE3030", "Demo Owner 15", "+910000000015"),
-    ("KA01MN4040", "Demo Owner 16", "+910000000016"),
-    ("TN09PQ5050", "Demo Owner 17", "+910000000017"),
-    ("GJ01RS6060", "Demo Owner 18", "+910000000018"),
-    ("PB10TU7070", "Demo Owner 19", "+910000000019"),
-    ("UK07VW8080", "Demo Owner 20", "+910000000020"),
-]
+DUMMY_OWNERS = []  # no sample owners; add your own from the Owners tab
 
 
 @contextmanager
