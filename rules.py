@@ -1,11 +1,10 @@
 """
 rules.py  -  violation rule + message text + EMAIL sending (Brevo HTTPS API).
 
-Why not Gmail SMTP? Render's free plan blocks SMTP ports (25/465/587).
-Brevo's API works over normal HTTPS, so it works locally AND on Render free.
-Uses only Python's built-in urllib (no extra packages, no extra RAM).
+Email is sent through Brevo's HTTPS API (not Gmail SMTP).
+Uses only Python's built-in urllib (no extra packages).
 
-Environment variables (set in Render, never in code):
+Environment variables (never store these in code):
     BREVO_API_KEY      your Brevo API key (starts with xkeysib-)
     EMAIL_FROM         a sender email VERIFIED in Brevo
     EMAIL_FROM_NAME    (optional) display name, default "Smart Parking Demo"

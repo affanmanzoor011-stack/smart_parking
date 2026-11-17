@@ -1,6 +1,6 @@
 """
 export_onnx.py  -  run ONCE on your own computer.
-Converts the YOLO model to ONNX so the Render (lite) version can use it
+Converts the YOLO model to ONNX so detect_lite.py can use it
 without PyTorch. Creates yolov8n.onnx in this folder.
 
 Run:
