@@ -1,4 +1,11 @@
-ultralytics
-easyocr
-opencv-python
 streamlit
+numpy
+opencv-python-headless
+onnxruntime
+pyclipper
+Shapely
+PyYAML
+Pillow
+six
+tqdm
+rapidocr-onnxruntime
