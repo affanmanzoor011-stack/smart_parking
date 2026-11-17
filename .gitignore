@@ -1,0 +1,17 @@
+# data and secrets (never upload)
+parking.db
+challan_images/
+.env
+*.env
+
+# test photos and outputs (contain real plates)
+*.jpg
+*.jpeg
+*.png
+output.jpg
+test images/
+
+# not needed on Render
+yolov8n.pt
+__pycache__/
+*.pyc
