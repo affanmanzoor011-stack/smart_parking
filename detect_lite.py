@@ -1,5 +1,5 @@
 """
-detect_lite.py  -  low-memory detection (target: under 500 MB RAM, Render FREE plan)
+detect_lite.py  -  low-memory detection (ONNX Runtime, no PyTorch)
 
 No PyTorch. Uses:
   - onnxruntime + yolov8n.onnx   for vehicle detection

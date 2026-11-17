@@ -4,7 +4,7 @@ Upload photo -> detect vehicle + plate -> check zone rule -> approve ->
 create challan -> EMAIL via Brevo (or simulated if no keys). Also shows
 history and owners.
 
-Environment variables (set in Render):
+Environment variables:
     BREVO_API_KEY, EMAIL_FROM   -> real email
     APP_PASSWORD                -> login password (optional)
 
