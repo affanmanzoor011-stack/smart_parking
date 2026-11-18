@@ -29,7 +29,7 @@ from rules import (ZONES, check_violation, build_message, send_message,
 
 db.init_db()
 
-st.set_page_config(page_title="Smart Parking Violation System", layout="centered")
+st.set_page_config(page_title="Smart Parking Violation System", layout="wide")
 
 
 # ------------------------------------------------------------------ helpers
@@ -47,6 +47,21 @@ def md_table(headers, rows):
     for r in rows:
         lines.append("| " + " | ".join(esc(v) for v in r) + " |")
     return "\n".join(lines)
+
+
+def table_with_delete(headers, rows, ids, prefix, on_delete, widths):
+    """Table where every row has its own trash icon at the end."""
+    sizes = list(widths) + [0.7]
+    head = st.columns(sizes)
+    for col, h in zip(head, list(headers) + [""]):
+        col.markdown(f"**{h}**")
+    for row, rid in zip(rows, ids):
+        cols = st.columns(sizes)
+        for col, v in zip(cols, row):
+            col.write(str(v) if str(v) else "-")
+        if cols[-1].button("\U0001F5D1\ufe0f", key=f"{prefix}_{rid}", help="Delete"):
+            on_delete(rid)
+            st.rerun()
 
 
 def remove_files(*paths):
@@ -255,7 +270,9 @@ elif page == "Challan history":
         if not rows:
             st.warning("No challans match your search.")
         else:
-            st.markdown(md_table(headers, [to_row(r) for r in rows]))
+            table_with_delete(headers, [to_row(r) for r in rows], [r["id"] for r in rows],
+                              "delch", db.delete_challan,
+                              [0.6, 1.6, 1.4, 2.6, 2.0, 0.9, 1.8, 1.5])
 
             # CSV of everything that matches the search (not just this page)
             buf = io.StringIO()
@@ -273,9 +290,6 @@ elif page == "Challan history":
                 st.image(r["image_path"], caption="Evidence image", width="stretch")
             st.write(f"**{r['plate']}**  |  {r['zone']}  |  Rs {r['fine']}  |  {r['owner_name']}  |  {r['email']}  |  {r['status']}")
             st.code(build_message(r), language=None)
-            if st.button("Delete this challan", key=f"del_ch_{r['id']}"):
-                db.delete_challan(r["id"])
-                st.rerun()
 
     # clear all challans
     if n_all:
@@ -309,17 +323,12 @@ else:
     total_o, owners = db.search_owners(oq, limit=50)
     if owners:
         st.caption(f"{total_o} owner(s) match. Showing the first {len(owners)}.")
-        st.markdown(md_table(["Plate", "Owner", "Email", "Phone"],
-                             [[o["plate"], o["name"], o["email"] or "-", o["phone"] or "-"] for o in owners]))
+        table_with_delete(["Plate", "Owner", "Email", "Phone"],
+                          [[o["plate"], o["name"], o["email"] or "-", o["phone"] or "-"] for o in owners],
+                          [o["plate"] for o in owners], "delow", db.delete_owner,
+                          [1.5, 1.5, 3.0, 1.5])
     else:
         st.info("No owners found.")
-
-    if owners:
-        pick = st.selectbox("Delete an owner", [f"{o['plate']} - {o['name']}" for o in owners],
-                            key="del_owner_pick")
-        if st.button("Delete selected owner"):
-            db.delete_owner(pick.split(" - ")[0])
-            st.rerun()
 
     if db.count_owners():
         with st.expander("Danger zone: delete all owners"):
