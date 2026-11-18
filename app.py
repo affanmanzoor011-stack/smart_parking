@@ -4,7 +4,7 @@ Upload photo -> detect vehicle + plate -> check zone rule -> approve ->
 create challan -> EMAIL via Brevo (or simulated if no keys). Also shows
 history and owners.
 
-Environment variables:
+Environment variables (set in Render):
     BREVO_API_KEY, EMAIL_FROM   -> real email
     APP_PASSWORD                -> login password (optional)
 
@@ -273,6 +273,17 @@ elif page == "Challan history":
                 st.image(r["image_path"], caption="Evidence image", width="stretch")
             st.write(f"**{r['plate']}**  |  {r['zone']}  |  Rs {r['fine']}  |  {r['owner_name']}  |  {r['email']}  |  {r['status']}")
             st.code(build_message(r), language=None)
+            if st.button("Delete this challan", key=f"del_ch_{r['id']}"):
+                db.delete_challan(r["id"])
+                st.rerun()
+
+    # clear all challans
+    if n_all:
+        with st.expander("Danger zone: delete all challans"):
+            sure = st.checkbox("Yes, delete ALL challans and evidence images", key="sure_ch")
+            if st.button("Delete all challans", disabled=not sure):
+                db.clear_challans()
+                st.rerun()
 
 # ------------------------------------------------------------------ Owners
 else:
@@ -302,3 +313,17 @@ else:
                              [[o["plate"], o["name"], o["email"] or "-", o["phone"] or "-"] for o in owners]))
     else:
         st.info("No owners found.")
+
+    if owners:
+        pick = st.selectbox("Delete an owner", [f"{o['plate']} - {o['name']}" for o in owners],
+                            key="del_owner_pick")
+        if st.button("Delete selected owner"):
+            db.delete_owner(pick.split(" - ")[0])
+            st.rerun()
+
+    if db.count_owners():
+        with st.expander("Danger zone: delete all owners"):
+            sure_o = st.checkbox("Yes, delete ALL owners", key="sure_ow")
+            if st.button("Delete all owners", disabled=not sure_o):
+                db.clear_owners()
+                st.rerun()

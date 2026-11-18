@@ -181,3 +181,40 @@ def search_owners(query="", limit=50):
         rows = [dict(r) for r in c.execute(
             f"SELECT * FROM owners WHERE {where} ORDER BY plate LIMIT ?", args + (limit,))]
     return total, rows
+
+
+# ---- delete helpers ----
+def _remove_files(paths):
+    for p in paths:
+        try:
+            if p and os.path.exists(p):
+                os.remove(p)
+        except OSError:
+            pass
+
+
+def delete_challan(challan_id):
+    with _db() as c:
+        row = c.execute("SELECT image_path FROM challans WHERE id = ?", (challan_id,)).fetchone()
+        c.execute("DELETE FROM challans WHERE id = ?", (challan_id,))
+    if row:
+        _remove_files([row["image_path"]])
+
+
+def clear_challans():
+    """Delete every challan and its evidence image; numbering restarts at 1."""
+    with _db() as c:
+        paths = [r[0] for r in c.execute("SELECT image_path FROM challans")]
+        c.execute("DELETE FROM challans")
+        c.execute("DELETE FROM sqlite_sequence WHERE name = 'challans'")
+    _remove_files(paths)
+
+
+def delete_owner(plate):
+    with _db() as c:
+        c.execute("DELETE FROM owners WHERE plate = ?", (normalize(plate),))
+
+
+def clear_owners():
+    with _db() as c:
+        c.execute("DELETE FROM owners")
